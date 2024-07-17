@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  web:
+    image: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    expose:
+      - 80
+    ports:
+      - 80:80
+      
+  service1:
+    build: ./fastapi
+    expose:
+      - 80
+    ports:
+      - 5080:80
+    hostname: service1
+
+  service2:
+    build: ./fastapi
+    expose:
+      - 80
+    ports:
+      - 6080:80
+    hostname: service2
