@@ -8,20 +8,22 @@ services:
     expose:
       - 80
     ports:
-      - 80:80
+      - 5080:80
       
-  service1:
+  service1a:
     build: ./fastapi
     expose:
       - 80
-    ports:
-      - 5080:80
-    hostname: service1
+    hostname: service1a
+
+  service1b:
+    build: ./fastapi
+    expose:
+      - 80
+    hostname: service1b
 
   service2:
     build: ./fastapi
     expose:
       - 80
-    ports:
-      - 6080:80
     hostname: service2
