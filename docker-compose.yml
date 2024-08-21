@@ -5,8 +5,7 @@ services:
     image: nginx
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx-selfsigned.key:/etc/ssl/private/nginx-selfsigned.key
-      - ./nginx-selfsigned.crt:/etc/ssl/certs/nginx-selfsigned.crt
+      - ./tls:/tls
     expose:
       - 80
       - 443
