@@ -66,4 +66,73 @@ sudo openssl req -newkey rsa:2048 -nodes -keyout tls/domain.key -out tls/domain.
     curl https://tenmien.site/path1
     ```
 
-TODO: certbot to auto renew certificate, cert-manager for k8s ingress
+## Using webroot plugin
+* References:
+    * [reference 1](https://mindsers.blog/en/post/https-using-nginx-certbot-docker/)
+    * [reference 2](https://letsencrypt.org/docs/challenge-types/#http-01-challenge)
+* Purchase a domain name from a domain registrar and setup a DNS A record that points the domain to the webserver (publicly accessible) IP address
+* Add a location block in nginx config to handle `/.well-known/acme-challenge/` route:
+```
+# nginx2.conf
+server {
+    listen 80;
+    listen [::]:80;
+    server_name tenmien.site www.tenmien.site;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$server_name$request_uri;
+    }
+}
+```
+* Comment out the server block that handles https (because we don't have the certificate yet):
+```
+server {
+    listen 443 ssl; # Listen on port 443 using SSL/TLS
+    listen [::]:443 ssl; 
+
+    server_name tenmien.site www.tenmien.site; # Restrict access to this hostname
+
+    ssl_certificate /etc/nginx/ssl/live/tenmien.site/fullchain.pem;   # SSL certificate file path
+    ssl_certificate_key /etc/nginx/ssl/live/tenmien.site/privkey.pem;  # SSL certificate key file path
+        
+    location /path1 {
+        rewrite ^/path1(.*) /$1 break; # remove `path1` part
+        proxy_pass http://service1;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /path2 {
+        rewrite ^/path2(.*) /$1 break; # remove `path2` part
+        proxy_pass http://service2;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+* `docker compose -f docker-compose2.yml up -d`
+* Exec into certbot container and run
+```
+certbot certonly --webroot --webroot-path /var/www/certbot/ -d tenmien.site
+```
+Obtain `privkey.pem` for `ssl_certificate_key` and `fullchain.pem` for `ssl_certificate`
+* Exec into nginx container, uncomment the https server block and reload:
+```
+nginx -s reload
+```
+* Test with curl
+```
+curl https://tenmien.site/path1
+```
+* Renew certificate: exec into certbot container and run
+```
+certbot renew
+```
